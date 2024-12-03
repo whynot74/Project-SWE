@@ -5,26 +5,33 @@ from flask_cors import CORS
 app = Flask(__name__)
 CORS(app)
 
-# Configure the SQLite database
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///event_management.db"
+# Configure MSSQL database
+app.config["SQLALCHEMY_DATABASE_URI"] = (
+    "mssql+pyodbc://Zeyadk:12341234@localhost/EventSystem?driver=ODBC+Driver+17+for+SQL+Server"
+)
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db = SQLAlchemy(app)
 
 # Models
 class User(db.Model):
+    __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(80), nullable=False)
     email = db.Column(db.String(120), unique=True, nullable=False)
     password = db.Column(db.String(120), nullable=False)
 
+
 class UserPreference(db.Model):
+    __tablename__ = 'user_preference'
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     category_name = db.Column(db.String(100), nullable=False)
+
 
 # Initialize the database
 with app.app_context():
     db.create_all()
+
 
 # Routes
 @app.route("/register", methods=["POST"])
@@ -80,23 +87,29 @@ def save_preferences():
         user_id = data.get("user_id")
         preferences = data.get("preferences")  # List of category names
 
-        if not user_id or not preferences:
-            return jsonify({"message": "Invalid input!"}), 400
+        print(f"Data received: user_id={user_id}, preferences={preferences}")
 
-        user = User.query.get(user_id)
+        # Validate input
+        if not user_id or not isinstance(preferences, list) or len(preferences) == 0:
+            return jsonify({"message": "Invalid input! `user_id` and `preferences` are required."}), 400
+
+        # Check if the user exists
+        user = db.session.get(User, user_id)
         if not user:
-            return jsonify({"message": "User not found"}), 404
+            print(f"User with ID {user_id} not found in the database.")
+            return jsonify({"message": f"User with ID {user_id} does not exist."}), 404
 
         # Clear existing preferences for the user
         UserPreference.query.filter_by(user_id=user_id).delete()
 
-        # Save new preferences (category names instead of IDs)
+        # Save new preferences
         for category_name in preferences:
+            print(f"Adding preference: {category_name}")
             new_preference = UserPreference(user_id=user_id, category_name=category_name)
             db.session.add(new_preference)
 
         db.session.commit()
-
+        print("Preferences saved successfully!")
         return jsonify({"message": "Preferences saved successfully!"}), 200
 
     except Exception as e:
@@ -107,7 +120,7 @@ def save_preferences():
 @app.route("/get_preferences/<int:user_id>", methods=["GET"])
 def get_preferences(user_id):
     try:
-        user = User.query.get(user_id)
+        user = db.session.get(User, user_id)
         if not user:
             return jsonify({"message": "User not found"}), 404
 

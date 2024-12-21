@@ -371,7 +371,7 @@ def get_user_profile(user_id):
 
     return jsonify({"id": user.id, "name": user.name, "email": user.email}), 200
 
-@app.route("/profile/update", methods=["POST"])
+@app.route("/profile/update", methods=["PUT"])
 def update_profile():
     data = request.json
     user = User.query.get(data["user_id"])
@@ -382,7 +382,7 @@ def update_profile():
     user.email = data.get("email", user.email)
     db.session.commit()
 
-    return jsonify({"message": "Profile updated successfully!"}), 200
+    return jsonify({"message": "Profile updated successfully!", "user": {"id": user.id, "name": user.name, "email": user.email}}), 200
 
 
 @app.route("/tickets/purchase", methods=["POST"])
@@ -610,6 +610,7 @@ def cancel_ticket():
     except Exception as e:
         print(f"Error canceling ticket: {type(e).__name__} - {e}")
         return jsonify({"error": "Failed to cancel ticket due to an internal error."}), 500
+
 
 if __name__ == "__main__":
     app.run(debug=True)

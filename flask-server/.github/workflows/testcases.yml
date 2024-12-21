@@ -1,0 +1,27 @@
+pytest:
+  base_url: "http://localhost:5000"  # Base URL for the API
+  database_uri: "mssql+pyodbc://Zeyadk:12341234@localhost/EventSystem?driver=ODBC+Driver+17+for+SQL+Server"
+  log_level: INFO
+  testpaths:
+    - tests  # Directory where test cases are stored
+  addopts: "--maxfail=3 --disable-warnings -v"  # Additional pytest options
+  cache_dir: ".pytest_cache"  # Directory for pytest cache
+  markers:  # Custom markers for categorizing tests
+    - register_user: Test cases related to user registration.
+    - login_user: Test cases related to user login.
+    - events: Test cases for events CRUD.
+    - notifications: Test cases for notifications management.
+    - bookmarks: Test cases for bookmark operations.
+    - preferences: Test cases for user preferences.
+    - reviews: Test cases for event reviews.
+    - tickets: Test cases for ticket purchase and cancellation.
+    - admin: Test cases for admin functionalities.
+    - recommendations: Test cases for event recommendations.
+
+  filterwarnings:
+    - ignore: ".deprecated."  # Filter out specific warning patterns
+    - default
+  junit_family: "xunit2"  # Reporting format for CI/CD tools
+  python_files: "test_*.py"  # Test files pattern
+  python_classes: "Test*"  # Test classes pattern
+  python_functions: "test_*"  # Test functions pattern

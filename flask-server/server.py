@@ -2,7 +2,6 @@ from flask import Flask, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from functools import wraps
-
 app = Flask(__name__)
 CORS(app)
 
@@ -22,6 +21,44 @@ class User(db.Model):
     password = db.Column(db.String(120), nullable=False)
     bookmarks = db.relationship('Bookmark', backref='user')
     tickets = db.relationship('Ticket', backref='user')
+
+# Routes
+@app.route("/profile/<int:user_id>", methods=["GET"])
+def get_user_profile(user_id):
+    try:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        user_data = {
+            "id": user.id,
+            "name": user.name,
+            "email": user.email
+        }
+        return jsonify(user_data), 200
+    except Exception as e:
+        print(f"Error fetching user data: {type(e).__name__} - {e}")
+        return jsonify({"error": "Failed to fetch user data due to an internal error."}), 500
+
+@app.route("/profile/update", methods=["PUT"])
+def update_profile():
+    data = request.json
+    try:
+        user = User.query.get(data["user_id"])
+        if not user:
+            return jsonify({"error": "User not found"}), 404
+
+        user.name = data.get("name", user.name)
+        user.email = data.get("email", user.email)
+        db.session.commit()
+
+        return jsonify({"message": "Profile updated successfully!", "user": {"id": user.id, "name": user.name, "email": user.email}}), 200
+    except Exception as e:
+        print(f"Error updating profile: {type(e).__name__} - {e}")
+        return jsonify({"error": "Failed to update profile due to an internal error."}), 500
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 
 class UserPreference(db.Model):
